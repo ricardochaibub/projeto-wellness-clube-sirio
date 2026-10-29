@@ -14,6 +14,12 @@
         "8770"
       ],
       "port": 8770
+    },
+    {
+      "name": "site-wellness-dev",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["tools/servidor_dev.py", "8771"],
+      "port": 8771
     }
   ]
 }

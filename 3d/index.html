@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Tour 3D · Espaço Wellness Sírio</title>
+  <meta name="description" content="Tour 3D interativo da proposta de espaço wellness para o Esporte Clube Sírio.">
+  <link rel="icon" href="../img/logo-sirio.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --vermelho: #c8102e;
+      --vermelho-escuro: #9e0c24;
+      --tinta: #1d1f22;
+      --suave: #5d6168;
+      --vidro: rgba(255, 255, 255, 0.92);
+      --borda: rgba(0, 0, 0, 0.08);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #dfe7ec; color: var(--tinta); font: 15px/1.5 Inter, system-ui, sans-serif; overflow: hidden; }
+    #palco { position: fixed; inset: 0; }
+    #palco canvas { display: block; }
+
+    .topo {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 5;
+      display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+      padding-top: max(12px, env(safe-area-inset-top));
+      background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.75));
+      backdrop-filter: blur(8px); border-bottom: 1px solid var(--borda);
+    }
+    .topo img { height: 34px; }
+    .topo strong { font-size: 15px; display: block; line-height: 1.2; }
+    .topo span { font-size: 12px; color: var(--suave); }
+    .topo a.voltar { margin-left: auto; color: var(--vermelho); font-weight: 600; text-decoration: none; font-size: 14px; white-space: nowrap; }
+
+    .barra {
+      position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 6;
+      display: flex; gap: 6px; align-items: center; padding: 6px; border-radius: 999px;
+      background: var(--vidro); box-shadow: 0 8px 28px rgba(0,0,0,.18); backdrop-filter: blur(8px);
+      max-width: calc(100vw - 24px);
+    }
+    .barra button, .barra select {
+      font: 600 14px Inter, sans-serif; border: 0; border-radius: 999px; padding: 9px 14px; cursor: pointer;
+      background: transparent; color: var(--tinta); white-space: nowrap;
+    }
+    .barra button[aria-pressed="true"] { background: var(--vermelho); color: #fff; }
+    .barra select { background: #f1efec; padding-right: 10px; }
+
+    .dica {
+      position: fixed; left: 50%; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 60px); transform: translateX(-50%); z-index: 4;
+      font-size: 13px; color: #fff; background: rgba(20, 22, 25, .62); padding: 6px 12px; border-radius: 999px;
+      text-align: center; max-width: calc(100vw - 32px); pointer-events: none;
+    }
+
+    #pontos { position: fixed; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; }
+    .ponto {
+      position: absolute; left: 0; top: 0; pointer-events: auto; border: 0; padding: 0; background: none; cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .ponto-n {
+      width: 26px; height: 26px; border-radius: 50%; background: var(--vermelho); color: #fff;
+      font: 700 12px Inter, sans-serif; display: grid; place-items: center;
+      box-shadow: 0 0 0 4px rgba(200, 16, 46, .25), 0 3px 10px rgba(0,0,0,.25);
+      animation: pulso 2.4s ease-in-out infinite;
+    }
+    .ponto-nome {
+      position: absolute; left: 32px; white-space: nowrap; font: 600 12px Inter, sans-serif;
+      background: rgba(255,255,255,.95); padding: 3px 8px; border-radius: 6px; opacity: 0; transform: translateX(-4px);
+      transition: .15s; pointer-events: none; color: var(--tinta);
+    }
+    .ponto:hover .ponto-nome, .ponto:focus-visible .ponto-nome { opacity: 1; transform: none; }
+    @keyframes pulso { 50% { box-shadow: 0 0 0 9px rgba(200, 16, 46, 0), 0 3px 10px rgba(0,0,0,.25); } }
+    @media (prefers-reduced-motion: reduce) { .ponto-n { animation: none; } }
+
+    .info {
+      position: fixed; z-index: 7; top: 76px; right: 16px; width: 340px; max-height: calc(100vh - 170px); overflow: auto;
+      background: #fff; border-radius: 16px; box-shadow: 0 16px 48px rgba(0,0,0,.22); padding: 20px; display: none;
+    }
+    .info.aberta { display: block; }
+    .info h2 { margin: 0 32px 6px 0; font-size: 19px; line-height: 1.25; }
+    .info p { margin: 0 0 12px; color: var(--suave); font-size: 14px; }
+    .info ul { margin: 0 0 14px; padding-left: 18px; font-size: 14px; }
+    .info li { margin-bottom: 4px; }
+    .info .fechar { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%; border: 0; background: #f1efec; cursor: pointer; font-size: 18px; line-height: 1; }
+    .precos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .precos div { background: #f6f4f1; border-radius: 10px; padding: 8px; text-align: center; }
+    .precos div.ativo { background: #fdeaed; outline: 2px solid var(--vermelho); }
+    .precos small { display: block; font-size: 11px; color: var(--suave); }
+    .precos b { font-size: 14px; }
+    .info .nota { font-size: 12px; color: var(--suave); margin-top: 10px; }
+
+    #joystick {
+      position: fixed; left: 24px; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 70px); z-index: 6;
+      width: 112px; height: 112px; border-radius: 50%; background: rgba(255,255,255,.35); border: 2px solid rgba(255,255,255,.8);
+      display: none; touch-action: none;
+    }
+    #joystick span { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; background: rgba(255,255,255,.95); box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+    body.modo-caminhada.toque #joystick { display: block; }
+
+    .carregando { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: #eef1ef; font-weight: 600; color: var(--suave); transition: opacity .4s; }
+    .carregando.sumir { opacity: 0; pointer-events: none; }
+    .tela-cheia { position: fixed; top: 12px; right: 12px; z-index: 6; display: none; background: var(--vidro); color: var(--vermelho); font-weight: 600; font-size: 13px; padding: 8px 12px; border-radius: 999px; text-decoration: none; box-shadow: 0 4px 14px rgba(0,0,0,.15); }
+
+    body.embed .topo { display: none; }
+    body.embed .tela-cheia { display: block; }
+    body.embed .info { top: 56px; }
+    body.limpo .topo, body.limpo .barra, body.limpo .dica, body.limpo #pontos, body.limpo .tela-cheia, body.limpo #joystick { display: none !important; }
+
+    @media (max-width: 640px) {
+      .topo strong { font-size: 14px; }
+      .topo span { display: none; }
+      .barra button, .barra select { padding: 8px 10px; font-size: 13px; }
+      .info { left: 8px; right: 8px; top: auto; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 62px); width: auto; max-height: 55vh; }
+      .ponto-n { width: 24px; height: 24px; }
+      .dica { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 56px); font-size: 12px; }
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header class="topo">
+    <img src="../img/logo-sirio.png" alt="Esporte Clube Sírio">
+    <div><strong>Espaço Wellness Sírio</strong><span>Tour 3D da proposta · área de 25 x 7 m</span></div>
+    <a class="voltar" href="../">Ver a proposta</a>
+  </header>
+
+  <div id="palco"></div>
+  <div id="pontos"></div>
+  <a class="tela-cheia" href="./" target="_blank" rel="noopener">Abrir em tela cheia</a>
+
+  <div class="dica" id="dica">Arraste para girar, use dois dedos ou a roda do mouse para aproximar. Toque nos números.</div>
+
+  <nav class="barra" aria-label="Modos de visão">
+    <button type="button" data-modo="orbital" aria-pressed="true">Orbital</button>
+    <button type="button" data-modo="planta" aria-pressed="false">Planta</button>
+    <button type="button" data-modo="caminhada" aria-pressed="false">Caminhar</button>
+    <select id="cenario" aria-label="Cenário de orçamento">
+      <option value="essencial">Essencial</option>
+      <option value="recomendado" selected>Recomendado</option>
+      <option value="premium">Premium</option>
+    </select>
+  </nav>
+
+  <div id="joystick" aria-hidden="true"><span></span></div>
+
+  <aside class="info" id="info" aria-live="polite">
+    <button class="fechar" type="button" aria-label="Fechar">×</button>
+    <div id="info-conteudo"></div>
+  </aside>
+
+  <div class="carregando" id="carregando">Montando o espaço em 3D…</div>
+
+  <script type="module">
+    import { criarTour } from '../js/tour3d.js';
+
+    const qs = new URLSearchParams(location.search);
+    const corpo = document.body;
+    if (qs.has('embed')) corpo.classList.add('embed');
+    if (qs.has('limpo')) corpo.classList.add('limpo');
+    if (matchMedia('(pointer: coarse)').matches) corpo.classList.add('toque');
+
+    const dicas = {
+      orbital: 'Arraste para girar, use dois dedos ou a roda do mouse para aproximar. Toque nos números.',
+      planta: 'Vista de cima. Arraste para mover e use dois dedos ou a roda do mouse para aproximar.',
+      caminhada: corpo.classList.contains('toque')
+        ? 'Use o controle à esquerda para andar e arraste a tela para olhar em volta.'
+        : 'Use W, A, S, D ou as setas para andar e arraste com o mouse para olhar.',
+    };
+
+    const info = document.getElementById('info');
+    const conteudo = document.getElementById('info-conteudo');
+    const fmt = (v) => v > 0 ? 'R$ ' + Math.round(v / 1000).toLocaleString('pt-BR') + ' mil' : 'Não incluso';
+    let cenarioAtual = 'recomendado';
+    let ultimaInfo = null;
+
+    function renderInfo(eq) {
+      ultimaInfo = eq;
+      const precos = eq.precos.map((p) =>
+        `<div class="${p.id === cenarioAtual ? 'ativo' : ''}"><small>${p.nome}</small><b>${fmt(p.valor)}</b></div>`).join('');
+      conteudo.innerHTML = `
+        <h2>${eq.nome}</h2>
+        <p>${eq.funcao}</p>
+        <ul>${eq.specs.map((s) => `<li>${s}</li>`).join('')}</ul>
+        <div class="precos">${precos}</div>
+        <p class="nota">Valor dos itens deste equipamento no orçamento, sem obra civil, BDI e contingência. Fornecedor, modelo e link de cada item estão na seção Orçamento da proposta.</p>`;
+      info.classList.add('aberta');
+    }
+
+    const tour = await criarTour(document.getElementById('palco'), {
+      ui: {
+        camadaPontos: document.getElementById('pontos'),
+        joystick: document.getElementById('joystick'),
+        aoMostrarInfo: renderInfo,
+        aoFecharInfo: () => info.classList.remove('aberta'),
+        aoMudarModo: (modo) => {
+          document.querySelectorAll('[data-modo]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.modo === modo)));
+          corpo.classList.toggle('modo-caminhada', modo === 'caminhada');
+          document.getElementById('dica').textContent = dicas[modo];
+        },
+      },
+    });
+
+    document.querySelectorAll('[data-modo]').forEach((b) => b.addEventListener('click', () => tour.definirModo(b.dataset.modo)));
+    document.getElementById('cenario').addEventListener('change', (e) => {
+      cenarioAtual = e.target.value;
+      tour.definirCenario(cenarioAtual);
+      if (ultimaInfo && info.classList.contains('aberta')) renderInfo(ultimaInfo);
+    });
+    info.querySelector('.fechar').addEventListener('click', () => info.classList.remove('aberta'));
+
+    if (qs.get('vista')) tour.aplicarVista(qs.get('vista'));
+    if (qs.get('modo')) tour.definirModo(qs.get('modo'));
+
+    // Permite que a página da proposta troque a vista do iframe.
+    window.addEventListener('message', (e) => {
+      if (e.origin !== location.origin || !e.data) return;
+      if (e.data.vista) tour.aplicarVista(e.data.vista);
+      if (e.data.modo) tour.definirModo(e.data.modo);
+    });
+
+    window.__tour = tour;
+    document.getElementById('carregando').classList.add('sumir');
+  </script>
+</body>
+</html>

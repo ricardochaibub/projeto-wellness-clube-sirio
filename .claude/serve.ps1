@@ -1,12 +1,10 @@
 # Servidor estatico minimo para o preview local.
 #
-# Este projeto e um site estatico (index.html + img/). A maquina nao tem
-# python, node, php nem ruby instalados -- o "python" do PATH e apenas o
-# atalho da Microsoft Store, que so imprime a mensagem de instalacao.
-# Como o PowerShell 5.1 ja vem com o .NET Framework, o HttpListener resolve
-# sem instalar nada.
+# Este projeto e um site estatico. O PowerShell 5.1 ja vem com o .NET
+# Framework, entao o HttpListener serve o site sem instalar nada (e o que o
+# abrir-site.bat usa). Pastas como /3d/ entregam o index.html delas.
 #
-# Uso: powershell -NoProfile -ExecutionPolicy Bypass -File .claude/serve.ps1 -Port 8765
+# Uso: powershell -NoProfile -ExecutionPolicy Bypass -File .claude/serve.ps1 -Port 8770
 
 param(
     [int]$Port = 8765,
@@ -35,6 +33,8 @@ $mime = @{
     '.woff' = 'font/woff'
     '.woff2'= 'font/woff2'
     '.txt'  = 'text/plain; charset=utf-8'
+    '.md'   = 'text/markdown; charset=utf-8'
+    '.xlsx' = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 }
 
 $listener = New-Object System.Net.HttpListener
@@ -63,6 +63,9 @@ try {
             $rel = $rel.TrimStart('/').Replace('/', '\')
 
             $full = Join-Path $Root $rel
+            if (Test-Path -LiteralPath $full -PathType Container) {
+                $full = Join-Path $full 'index.html'
+            }
 
             # Impede sair da pasta do projeto (path traversal).
             $fullResolved = $null
